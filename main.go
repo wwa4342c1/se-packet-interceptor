@@ -56,7 +56,10 @@ func main() {
 	)
 
 	found_layer_types := []gopacket.LayerType{}
-	parser.DecodeLayers(packet.Data(), &found_layer_types)
+	err := parser.DecodeLayers(packet.Data(), &found_layer_types)
+	if err != nil {
+            fmt.Println("asdf ", err)
+	}
 	for _, layer_type := range found_layer_types {
 		if layer_type == layers.LayerTypeIPv4 {
 			log.Printf("IPV4: %s -> %s", layer_ipv4.SrcIP, layer_ipv4.DstIP)
@@ -65,6 +68,7 @@ func main() {
 			log.Printf("UDP: %s -> %s", layer_udp.SrcPort, layer_udp.DstPort)
 		}
 		if layer_type == net.NetChannelLayerType {
+			fmt.Print(layer_netchan.String())
 			fmt.Println(layer_netchan.HexDump())
 		}
 	}
