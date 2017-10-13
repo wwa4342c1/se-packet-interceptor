@@ -32,12 +32,13 @@ type NetChannel struct {
 func (nc *NetChannel) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	log.Print("Started processing.")
 	nc.payload = data
-	bytes := ByteBuffer{data, 0}
+	bytes := BitBuffer{data, 0}
 	nc.SeqNum = bytes.ReadLong()
 	nc.SeqAckNum = bytes.ReadLong()
 	nc.Flags = bytes.ReadByte()
 	nc.Checksum = bytes.ReadShort()
 	nc.RelState = bytes.ReadByte()
+	log.Print(bytes.ReadUBitLong(4))
 
 	if nc.Flags & PacketFlagChoked != 0 {
             //TODO: handle this (in a different layer?)
