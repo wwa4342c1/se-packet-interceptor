@@ -18,4 +18,4 @@ const (
     PacketFlagChallenge  byte = (1<<5)  // Packet is a challenge
 )
 
-const NetMsgTypeBits uint64 = 8
+const NetMsgTypeBits uint32 = 8
