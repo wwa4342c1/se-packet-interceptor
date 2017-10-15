@@ -4,6 +4,7 @@ import (
     "log"
     "strconv"
     "encoding/hex"
+    crc32 "hash/crc32"
     "github.com/google/gopacket"
     "github.com/google/gopacket/layers"
 )
@@ -36,23 +37,37 @@ func (nc *NetChannel) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 	nc.SeqNum = bytes.ReadLong()
 	nc.SeqAckNum = bytes.ReadLong()
 	nc.Flags = bytes.ReadByte()
-	nc.Checksum = bytes.ReadShort()
-	nc.RelState = bytes.ReadByte()
-	log.Print(bytes.ReadUBitLong(4))
 
-	if nc.Flags & PacketFlagChoked != 0 {
-            //TODO: handle this (in a different layer?)
-	    log.Print("Choked.")
-	    return nil
-	} else if nc.Flags & PacketFlagChallenge != 0 {
-            //TODO: handle this (in a different layer?)
-	    log.Print("Challenge.")
-	    return nil
-	} else if nc.Flags & PacketFlagReliable != 0 {
-            //TODO: handle this (in a different layer?)
-	    log.Print("Reliable.")
+	log.Print("\tFLAGS:")
+	if (nc.Flags & PacketFlagReliable != 0) {
+	    log.Print("\t\tRELIABLE")
 	    return nil
 	}
+	if (nc.Flags & PacketFlagCompressed != 0) {
+	    log.Print("\t\tCOMPRESSED")
+	    return nil
+	}
+	if (nc.Flags & PacketFlagEncrypted != 0) {
+	    log.Print("\t\tENCRYPTED")
+	    return nil
+	}
+	if (nc.Flags & PacketFlagChoked != 0) {
+	    log.Print("\t\tCHOKED")
+	    return nil
+	}
+
+        if true {
+	    nc.Checksum = bytes.ReadShort()
+	    offset := bytes.cur_bit >> 3
+	    checksum := DoChecksum(bytes, offset)
+	    if checksum != nc.Checksum {
+	        log.Print("\tChecksum mismatch, datagram invalid.")
+	        return nil
+	    }
+	}
+
+	nc.RelState = bytes.ReadByte()
+	log.Print(bytes.ReadUBitLong(4))
 
 	nc.Type = byte(bytes.ReadUBitLong(NetMsgTypeBits))
 
@@ -111,4 +126,20 @@ func DecodeNetChannel(data []byte, p gopacket.PacketBuilder) error {
 	p.SetApplicationLayer(netchannel)
 
 	return nil
+}
+
+func DoChecksum(buf BitBuffer, offset uint32) uint16 {
+    checksum := crc32.ChecksumIEEE(buf.bytes[offset:])
+    lower_word := uint16(checksum & 0xffff)
+    upper_word := uint16((checksum >> 16) & 0xffff)
+
+    /* The below clusterfuck is brought to you by the fact that Golang removed
+       XOR from the usual list of built-in operations.  I have no idea why.
+       They moved logical compliment from '~' to '^', which is the XOR operator
+       in literally all other languages.  '~' does nothing in golang except
+       display a warning that users should use '^' instead.  There was
+       literally no reason to get rid of XOR.
+       
+       Anyways, I needed XOR, so the below is logically equivalent. */
+    return (lower_word | upper_word) & ^(lower_word & upper_word)
 }
