@@ -52,6 +52,7 @@ func (nc *NetChannel) DecodeHeader(bytes *BitBuffer) int {
 
 	if nc.Flags & PacketFlagChoked != 0 {
 	    num_choked := bytes.ReadByte()
+	    // BUG: after this read, the cmd read below skips a byte.  Figure out why.
 	    log.Print("\tCHOKED ", num_choked)
 	}
 
