@@ -28,14 +28,16 @@ func main() {
     layers.RegisterUDPPortLayerType(layers.UDPPort(27015), net.NetChannelLayerType)
 
     // Open device
-    log.Printf("Staring capture on interface \"%s\".", *iface);
     if *pcap_file != "" {
+            log.Printf("Opening traffic from \"%s\".", *pcap_file);
 	    handle, err = pcap.OpenOffline(*pcap_file)
     } else {
+
+            log.Printf("Staring capture on interface \"%s\".", *iface);
 	    handle, err = pcap.OpenLive(*iface, int32(*snapshot_len), true, pcap.BlockForever)
     }
     if err != nil {
-        log.Fatal("failed to open live stream, ", err)
+        log.Fatal("failed to open stream, ", err)
     }
     defer handle.Close()
 
@@ -58,19 +60,19 @@ func main() {
 	found_layer_types := []gopacket.LayerType{}
 	err := parser.DecodeLayers(packet.Data(), &found_layer_types)
 	if err != nil {
-            fmt.Println("asdf ", err)
+            //log.Print("asdf ", err)
 	}
-	//for _, layer_type := range found_layer_types {
-	//	if layer_type == layers.LayerTypeIPv4 {
-	//		log.Printf("IPV4: %s -> %s", layer_ipv4.SrcIP, layer_ipv4.DstIP)
-	//	}
-	//	if layer_type == layers.LayerTypeUDP {
-	//		log.Printf("UDP: %s -> %s", layer_udp.SrcPort, layer_udp.DstPort)
-	//	}
-	//	if layer_type == net.NetChannelLayerType {
-	//		fmt.Print(layer_netchan.String())
-	//		fmt.Println(layer_netchan.HexDump())
-	//	}
-	//}
+	for _, layer_type := range found_layer_types {
+		if layer_type == layers.LayerTypeIPv4 {
+			//log.Printf("IPV4: %s -> %s", layer_ipv4.SrcIP, layer_ipv4.DstIP)
+		}
+		if layer_type == layers.LayerTypeUDP {
+			//log.Printf("UDP: %s -> %s", layer_udp.SrcPort, layer_udp.DstPort)
+		}
+		if layer_type == net.NetChannelLayerType {
+			//fmt.Print(layer_netchan.String())
+			fmt.Println(layer_netchan.HexDump())
+		}
+	}
     }
 }

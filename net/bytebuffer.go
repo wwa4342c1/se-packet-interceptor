@@ -1,5 +1,10 @@
 package net
 
+import (
+	crc32 "hash/crc32"
+	"log"
+)
+
 type BitBuffer struct {
     bytes []byte
     cur_bit uint32
@@ -20,6 +25,7 @@ func (b *BitBuffer) ReadUBitLong(num_bits uint32) uint32 {
     wo1 := b.cur_bit >> 3
     wo2 := end_bit >> 3
 
+    log.Print("\t\tasfd ", b.cur_bit)
     b.cur_bit += num_bits
 
     mask := uint32((2 << (num_bits - 1)) - 1)
@@ -46,4 +52,20 @@ func (b *BitBuffer) ReadBit() byte {
     var value byte = b.bytes[b.cur_bit >> 3] >> (b.cur_bit & 7)
     b.cur_bit += 1
     return value & 1
+}
+
+func (b *BitBuffer) DoChecksum(offset uint32) uint16 {
+    checksum := crc32.ChecksumIEEE(b.bytes[offset:])
+    lower_word := uint16(checksum & 0xffff)
+    upper_word := uint16((checksum >> 16) & 0xffff)
+
+    /* The below clusterfuck is brought to you by the fact that Golang removed
+       XOR from the usual list of built-in operations.  I have no idea why.
+       They moved logical compliment from '~' to '^', which is the XOR operator
+       in literally all other languages.  '~' does nothing in golang except
+       display a warning that users should use '^' instead.  There was
+       literally no reason to get rid of XOR.
+       
+       Anyways, I needed XOR, so the below is logically equivalent. */
+    return (lower_word | upper_word) & ^(lower_word & upper_word)
 }
