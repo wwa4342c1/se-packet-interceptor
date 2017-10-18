@@ -59,13 +59,5 @@ func (b *BitBuffer) DoChecksum(offset uint32) uint16 {
     lower_word := uint16(checksum & 0xffff)
     upper_word := uint16((checksum >> 16) & 0xffff)
 
-    /* The below clusterfuck is brought to you by the fact that Golang removed
-       XOR from the usual list of built-in operations.  I have no idea why.
-       They moved logical compliment from '~' to '^', which is the XOR operator
-       in literally all other languages.  '~' does nothing in golang except
-       display a warning that users should use '^' instead.  There was
-       literally no reason to get rid of XOR.
-       
-       Anyways, I needed XOR, so the below is logically equivalent. */
-    return (lower_word | upper_word) & ^(lower_word & upper_word)
+    return lower_word ^ upper_word
 }
